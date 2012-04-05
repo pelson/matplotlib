@@ -1455,17 +1455,49 @@ class Axes(martist.Artist):
 
         self._update_line_limits(line)
         if not line.get_label():
-            line.set_label('_line%d'%len(self.lines))
+            line.set_label('_line%d' % len(self.lines))
         self.lines.append(line)
         line._remove_method = lambda h: self.lines.remove(h)
         return line
 
     def _update_line_limits(self, line):
-        p = line.get_path()
-        if p.vertices.size > 0:
-            self.dataLim.update_from_path(p, self.ignore_existing_data_limits,
-                                            updatex=line.x_isdata,
-                                            updatey=line.y_isdata)
+        """Figures out the data limit of the given line, updating self.dataLim."""
+        path = line.get_path()
+        if path.vertices.size == 0:
+            return
+        
+        line_trans = line.get_transform()
+        
+        if line_trans == self.transData:
+            data_path = path
+            
+        elif line_trans.contains_branch(self.transData):
+            # identify the transform to go from line's coordinates
+            # to data coordinates
+            trans_to_data = line_trans - self.transData
+            
+            # if transData is affine we can use the cached non-affine component
+            # of line's path. (since the non-affine part of line_trans is
+            # entirely encapsulated in trans_to_data).
+            if self.transData.is_affine:
+                line_trans_path = line._get_transformed_path()
+                na_path, _ = line_trans_path.get_transformed_path_and_affine()
+                data_path = trans_to_data.transform_path_affine(na_path)
+            else:
+                data_path = trans_to_data.transform_path(path)
+        else:               
+            # for backwards compatibility we update the dataLim with the 
+            # coordinate range of the given path, even though the coordinate 
+            # systems are completely different. This may occur in situations
+            # such as when ax.transAxes is passed through for absolute 
+            # positioning.
+            data_path = path
+                                
+        if data_path.vertices.size > 0:
+            self.dataLim.update_from_path(data_path, 
+                                          self.ignore_existing_data_limits,
+                                          updatex=line.x_isdata,
+                                          updatey=line.y_isdata)
             self.ignore_existing_data_limits = False
 
     def add_patch(self, p):
@@ -3864,7 +3896,6 @@ class Axes(martist.Artist):
         for line in self._get_lines(*args, **kwargs):
             self.add_line(line)
             lines.append(line)
-
 
         self.autoscale_view(scalex=scalex, scaley=scaley)
         return lines
