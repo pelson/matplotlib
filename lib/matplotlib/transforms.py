@@ -1351,10 +1351,12 @@ class TransformWrapper(Transform):
     run time with a transform of a different type.  This class allows
     that replacement to correctly trigger invalidation.
 
-    Note that :class:`TransformWrapper` instances must have the same
-    input and output dimensions during their entire lifetime, so the
-    child transform may only be replaced with another child transform
-    of the same dimensions.
+    .. note::
+       :class:`TransformWrapper` instances must have the same
+       input and output dimensions during their entire lifetime, so the
+       child transform may only be replaced with another child transform
+       of the same dimensions.
+
     """
     pass_through = True
     
@@ -2034,9 +2036,9 @@ class CompositeGenericTransform(Transform):
 
     def _iter_break_from_left_to_right(self):
         for lh_compliment, rh_compliment in self._a._iter_break_from_left_to_right():
-              yield lh_compliment, rh_compliment + self._b
+            yield lh_compliment, rh_compliment + self._b
         for lh_compliment, rh_compliment in self._b._iter_break_from_left_to_right():
-              yield self._a + lh_compliment, rh_compliment
+            yield self._a + lh_compliment, rh_compliment
 
     def _get_is_affine(self):
         return self._a.is_affine and self._b.is_affine
@@ -2155,9 +2157,11 @@ def composite_transform_factory(a, b):
 
       c = a + b
     """
-    if a == IdentityTransform():
+    # note we are not doing IdentityTransform equality here since a or b
+    # may be a wrapped transform which could be updated later on
+    if isinstance(a, IdentityTransform):
         return b
-    elif b == IdentityTransform():
+    elif isinstance(b, IdentityTransform):
         return a
     elif a.is_affine and b.is_affine:
         return CompositeAffine2D(a, b)
