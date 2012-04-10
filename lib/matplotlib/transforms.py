@@ -1378,7 +1378,7 @@ class TransformWrapper(Transform):
 
     if DEBUG:
         def __str__(self):
-            return str(self._child)
+            return 'TransformWrapper(%s)' % (self._child, )
 
     def __repr__(self):
         return "TransformWrapper(%r)" % self._child
@@ -1450,7 +1450,7 @@ class AffineBase(Transform):
         return np.dot(b, a)
     
     def __eq__(self, other):
-        if other.is_affine:
+        if isinstance(other, Transform) and other.is_affine:
             return np.all(self.get_matrix() == other.get_matrix())
         return NotImplemented
 
