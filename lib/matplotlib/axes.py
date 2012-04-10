@@ -5854,7 +5854,7 @@ class Axes(martist.Artist):
                 edgecolors = edgecolors,
                 linewidths = linewidths,
                 offsets = zip(x,y),
-                transOffset = self.transData,
+                transOffset = kwargs.pop('transform', self.transData),
                 )
         collection.set_transform(mtransforms.IdentityTransform())
         collection.set_alpha(alpha)
