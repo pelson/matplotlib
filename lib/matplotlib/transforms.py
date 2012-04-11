@@ -1998,7 +1998,6 @@ class CompositeGenericTransform(Transform):
         assert a.output_dims == b.input_dims
         self.input_dims = a.input_dims
         self.output_dims = b.output_dims
-
         Transform.__init__(self, **kwargs)
         self._a = a
         self._b = b

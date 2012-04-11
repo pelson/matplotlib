@@ -12,7 +12,7 @@ __all__ = ['streamplot']
 
 
 def streamplot(axes, x, y, u, v, density=1, linewidth=None, color=None,
-               cmap=None, arrowsize=1, arrowstyle='-|>', minlength=0.1):
+               cmap=None, arrowsize=1, arrowstyle='-|>', minlength=0.1, transform=None):
     """Draws streamlines of a vector flow.
 
     Parameters
@@ -56,6 +56,9 @@ def streamplot(axes, x, y, u, v, density=1, linewidth=None, color=None,
 
     if color is None:
         color = axes._get_lines.color_cycle.next()
+
+#    transform = axes.get_transform(transform) # ideal implementation???
+    #transform = transform._as_mpl_transform(axes)
 
     if linewidth is None:
         linewidth = matplotlib.rcParams['lines.linewidth']
@@ -131,13 +134,18 @@ def streamplot(axes, x, y, u, v, density=1, linewidth=None, color=None,
             arrow_kw['color'] = cmap(norm(color_values[n]))
 
         p = patches.FancyArrowPatch(arrow_tail, arrow_head, **arrow_kw)
-        axes.add_patch(p)
+        # XXX Try should be removed
+        try:
+            axes.add_patch(p)
+        except:
+            pass
 
-    lc = matplotlib.collections.LineCollection(streamlines, **line_kw)
+    lc = matplotlib.collections.LineCollection(streamlines, transform=transform, **line_kw)
     if isinstance(color, np.ndarray):
         lc.set_array(np.asarray(line_colors))
         lc.set_cmap(cmap)
         lc.set_norm(norm)
+        
     axes.add_collection(lc)
 
     axes.update_datalim(((x.min(), y.min()), (x.max(), y.max())))
