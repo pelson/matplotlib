@@ -360,7 +360,7 @@ class GridSpecFromSubplotSpec(GridSpecBase):
         """
         The number of rows and number of columns of the grid need to
         be set. An instance of SubplotSpec is also needed to be set
-        from which the layout parameters will be inheirted. The wspace
+        from which the layout parameters will be inherited. The wspace
         and hspace of the layout can be optionally specified or the
         default values (from the figure or rcParams) will be used.
         """
@@ -439,7 +439,7 @@ class SubplotSpec(object):
 
     def get_geometry(self):
         """
-        get the subplot geometry, eg 2,2,3. Unlike SuplorParams,
+        get the subplot geometry, eg 2,2,3. Unlike SubplotParams,
         index is 0-based
         """
         rows, cols = self.get_gridspec().get_geometry()
