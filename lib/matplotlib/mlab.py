@@ -639,7 +639,7 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
         FFTSlices[iCol] = Slices
         if preferSpeedOverMemory:
             FFTConjSlices[iCol] = np.conjugate(Slices)
-        Pxx[iCol] = np.divide(np.mean(abs(Slices)**2), normVal)
+        Pxx[iCol] = np.divide(np.mean(abs(Slices)**2, axis=0), normVal)
     del Slices, ind, windowVals
 
     # compute the coherences and phases for all pairs using the
@@ -657,7 +657,7 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
             Pxy = FFTSlices[i] * FFTConjSlices[j]
         else:
             Pxy = FFTSlices[i] * np.conjugate(FFTSlices[j])
-        if numSlices>1: Pxy = np.mean(Pxy)
+        if numSlices>1: Pxy = np.mean(Pxy, axis=0)
         #Pxy = np.divide(Pxy, normVal)
         Pxy /= normVal
         #Cxy[(i,j)] = np.divide(np.absolute(Pxy)**2, Pxx[i]*Pxx[j])
@@ -2999,15 +2999,17 @@ def poly_below(xmin, xs, ys):
       ax.fill(xv, yv)
     """
     if ma.isMaskedArray(xs) or ma.isMaskedArray(ys):
-        np = ma
+        numpy = ma
+    else:
+        numpy = np
 
-    xs = np.asarray(xs)
-    ys = np.asarray(ys)
+    xs = numpy.asarray(xs)
+    ys = numpy.asarray(ys)
     Nx = len(xs)
     Ny = len(ys)
     assert(Nx==Ny)
-    x = xmin*np.ones(2*Nx)
-    y = np.ones(2*Nx)
+    x = xmin*numpy.ones(2*Nx)
+    y = numpy.ones(2*Nx)
     x[:Nx] = xs
     y[:Nx] = ys
     y[Nx:] = ys[::-1]
@@ -3026,17 +3028,19 @@ def poly_between(x, ylower, yupper):
     :meth:`matplotlib.axes.Axes.fill`.
     """
     if ma.isMaskedArray(ylower) or ma.isMaskedArray(yupper) or ma.isMaskedArray(x):
-        np = ma
+        numpy = ma
+    else:
+        numpy = np
 
     Nx = len(x)
     if not cbook.iterable(ylower):
-        ylower = ylower*np.ones(Nx)
+        ylower = ylower*numpy.ones(Nx)
 
     if not cbook.iterable(yupper):
-        yupper = yupper*np.ones(Nx)
+        yupper = yupper*numpy.ones(Nx)
 
-    x = np.concatenate( (x, x[::-1]) )
-    y = np.concatenate( (yupper, ylower[::-1]) )
+    x = numpy.concatenate( (x, x[::-1]) )
+    y = numpy.concatenate( (yupper, ylower[::-1]) )
     return x,y
 
 

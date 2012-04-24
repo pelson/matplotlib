@@ -134,6 +134,7 @@ class Legend(Artist):
                  scatterpoints = 3,    # TODO: may be an rcParam
                  scatteryoffsets=None,
                  prop = None,          # properties for the legend texts
+                 fontsize = None,        # keyword to set font size directly
 
                  # the following dimensions are in axes coords
                  pad = None,           # deprecated; use borderpad
@@ -174,6 +175,7 @@ class Legend(Artist):
         ================   ==================================================================
         loc                a location code
         prop               the font property
+        fontsize           the font size (used only if prop is not specified)
         markerscale        the relative size of legend markers vs. original
         numpoints          the number of points in the legend for line
         scatterpoints      the number of points in the legend for scatter plot
@@ -214,7 +216,10 @@ in the normalized axes coordinate.
         Artist.__init__(self)
 
         if prop is None:
-            self.prop=FontProperties(size=rcParams["legend.fontsize"])
+            if fontsize is not None:
+                self.prop=FontProperties(size=fontsize)
+            else:
+                self.prop=FontProperties(size=rcParams["legend.fontsize"])
         elif isinstance(prop, dict):
             self.prop=FontProperties(**prop)
             if "size" not in prop:
@@ -635,7 +640,7 @@ in the normalized axes coordinate.
 
         if len(handleboxes) > 0:
 
-            # We calculate number of lows in each column. The first
+            # We calculate number of rows in each column. The first
             # (num_largecol) columns will have (nrows+1) rows, and remaing
             # (num_smallcol) columns will have (nrows) rows.
             ncol = min(self._ncol, len(handleboxes))
