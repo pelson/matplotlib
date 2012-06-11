@@ -1,7 +1,6 @@
-
 """
-I'm not trying to make a good liking figure here, but just to show
-some examples of customizing rc params on the fly
+Rather than trying to make a good looking figure, this example shows
+ways of customizing rc params on the fly
 
 If you like to work interactively, and need to create different sets
 of defaults for figures (eg one set of defaults for publication, one

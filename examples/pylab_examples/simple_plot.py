@@ -8,5 +8,7 @@ xlabel('time (s)')
 ylabel('voltage (mV)')
 title('About as simple as it gets, folks')
 grid(True)
-savefig("test.png")
+
+savefig('simple_plot.png')
+
 show()

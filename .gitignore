@@ -36,6 +36,13 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
+# Eclipse files #
+#################
+.project
+.pydevproject
+.settings/org.eclipse.core.resources.prefs
+
+
 # Things specific to this project #
 ###################################
 lib/matplotlib/mpl-data/matplotlib.conf
@@ -47,3 +54,14 @@ doc/examples
 doc/_templates/gallery.html
 doc/users/installing.rst
 doc/_static/matplotlibrc
+doc/pyplots/tex_demo.png
+
+# Example output (from savefig, backendbases etc.)
+##################################################
+examples/*/*.png
+examples/*/*.pdf
+examples/_tmp_*.py
+examples/tests/agg
+examples/tests/svg
+examples/tests/ps
+examples/tests/pdf
