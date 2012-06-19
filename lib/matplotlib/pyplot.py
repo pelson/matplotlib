@@ -2021,6 +2021,7 @@ def colorbar(mappable=None, cax=None, ax=None, **kw):
     return ret
 colorbar.__doc__ = matplotlib.colorbar.colorbar_doc
 
+
 def clim(vmin=None, vmax=None):
     """
     Set the color limits of the current image.
