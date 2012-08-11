@@ -1120,28 +1120,28 @@ class LightSource(object):
     """
     def __init__(self,azdeg=315,altdeg=45,\
                  hsv_min_val=0,hsv_max_val=1,hsv_min_sat=1,hsv_max_sat=0):
-       """
-       Specify the azimuth (measured clockwise from south) and altitude
-       (measured up from the plane of the surface) of the light source
-       in degrees.
+        """
+        Specify the azimuth (measured clockwise from south) and altitude
+        (measured up from the plane of the surface) of the light source
+        in degrees.
+        
+        The color of the resulting image will be darkened
+        by moving the (s,v) values (in hsv colorspace) toward
+        (hsv_min_sat, hsv_min_val) in the shaded regions, or
+        lightened by sliding (s,v) toward
+        (hsv_max_sat hsv_max_val) in regions that are illuminated.
+        The default extremes are chose so that completely shaded points
+        are nearly black (s = 1, v = 0) and completely illuminated points
+        are nearly white (s = 0, v = 1).
+        """
+        self.azdeg = azdeg
+        self.altdeg = altdeg
+        self.hsv_min_val = hsv_min_val
+        self.hsv_max_val = hsv_max_val
+        self.hsv_min_sat = hsv_min_sat
+        self.hsv_max_sat = hsv_max_sat
 
-       The color of the resulting image will be darkened
-       by moving the (s,v) values (in hsv colorspace) toward
-       (hsv_min_sat, hsv_min_val) in the shaded regions, or
-       lightened by sliding (s,v) toward
-       (hsv_max_sat hsv_max_val) in regions that are illuminated.
-       The default extremes are chose so that completely shaded points
-       are nearly black (s = 1, v = 0) and completely illuminated points
-       are nearly white (s = 0, v = 1).
-       """
-       self.azdeg = azdeg
-       self.altdeg = altdeg
-       self.hsv_min_val = hsv_min_val
-       self.hsv_max_val = hsv_max_val
-       self.hsv_min_sat = hsv_min_sat
-       self.hsv_max_sat = hsv_max_sat
-
-    def shade(self,data,cmap):
+    def shade(self, data, cmap, elevation=None):
         """
         Take the input data array, convert to HSV values in the
         given colormap, then adjust those color values
@@ -1150,9 +1150,12 @@ class LightSource(object):
         RGBA values are returned, which can then be used to
         plot the shaded image with imshow.
         """
-
+        if elevation is None:
+            elevation = data
+            
+        # XXX accept a norm here
         rgb0 = cmap((data-data.min())/(data.max()-data.min()))
-        rgb1 = self.shade_rgb(rgb0, elevation=data)
+        rgb1 = self.shade_rgb(rgb0, elevation=elevation)
         rgb0[:,:,0:3] = rgb1
         return rgb0
 
