@@ -374,10 +374,9 @@ class Line2D(Artist):
         self._picker = p
 
     def get_window_extent(self, renderer):
-        bbox = Bbox.unit()
-        bbox.update_from_data_xy(
-            self.get_transform().transform(self.get_xydata()),
-            ignore=True)
+        bbox = Bbox([[0, 0], [0, 0]])
+        bbox.update_from_data_xy(self.get_transform().transform(self.get_xydata()),
+                                 ignore=True)
         # correct for marker size, if any
         if self._marker:
             ms = (self._markersize / 72.0 * self.figure.dpi) * 0.5
