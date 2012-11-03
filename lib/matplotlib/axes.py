@@ -6711,12 +6711,12 @@ class Axes(martist.Artist):
         """
         if not self._hold: self.cla()
 
-        patches = []
-        for poly in self._get_patches_for_fill(*args, **kwargs):
-            self.add_patch( poly )
-            patches.append( poly )
+        patches = list(self._get_patches_for_fill(*args, **kwargs))
+        coll = mcoll.PatchCollection(patches, match_original=True)
+        self.add_collection(coll)
+        
         self.autoscale_view()
-        return patches
+        return coll
 
     @docstring.dedent_interpd
     def fill_between(self, x, y1, y2=0, where=None, interpolate=False,
@@ -8233,15 +8233,11 @@ class Axes(martist.Artist):
 
         for (patch, lbl) in zip(patches, labels):
             if patch:
-                p = patch[0]
-                p.update(kwargs)
-                if lbl is not None: p.set_label(lbl)
+                patch.update(kwargs)
+                if lbl is not None: 
+                    patch.set_label(lbl)
 
-                p.set_snap(False)
-
-                for p in patch[1:]:
-                    p.update(kwargs)
-                    p.set_label('_nolegend_')
+                patch.set_snap(False)
 
         if binsgiven:
             if orientation == 'vertical':

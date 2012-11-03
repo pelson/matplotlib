@@ -901,6 +901,17 @@ def test_hist_stacked_weighted():
     ax = fig.add_subplot(111)
     ax.hist( (d1, d2), weights=(w1,w2), histtype="stepfilled", stacked=True)
 
+#@image_comparison(baseline_images[''])
+def test_hist_types():
+    import matplotlib
+    matplotlib.use('TkAgg', force=True, warn=False)
+    data = [np.linspace(-np.pi, 3 * np.pi), np.arange(8) + 11]
+    n, bins, patches = plt.hist(data, 10, histtype='step')
+    print patches
+    print patches[0]
+    plt.legend(patches, ('a', 'b') )
+    plt.show()
+    
 @image_comparison(baseline_images=['transparent_markers'], remove_text=True)
 def test_transparent_markers():
     np.random.seed(0)

@@ -137,7 +137,8 @@ class Collection(artist.Artist, cm.ScalarMappable):
                 else:
                     return val
 
-        raise TypeError('val must be a float or nonzero sequence of floats')
+        raise TypeError('val must be a float or nonzero sequence of floats. '
+                        'Got {!r}'.format(val))
 
     @staticmethod
     def _get_bool(val):
