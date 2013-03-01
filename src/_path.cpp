@@ -16,6 +16,12 @@
 #include "agg_path_storage.h"
 #include "agg_trans_affine.h"
 
+
+#include <iostream>
+
+
+
+
 struct XY
 {
     double x;
@@ -23,6 +29,20 @@ struct XY
 
     XY(double x_, double y_) : x(x_), y(y_) {}
 };
+
+
+struct LineSeg
+{
+    double x0;
+    double y0;
+    
+    double x1;
+    double y1;
+
+    LineSeg(double x0_, double y0_, double x1_, double y1_) : x1(x1_), y1(y1_), x1(x1_), y1(y1_) {}
+};
+
+
 
 // the extension module
 class _path_module : public Py::ExtensionModule<_path_module>
@@ -49,6 +69,8 @@ public:
                            "path_in_path(a, atrans, b, btrans)");
         add_varargs_method("clip_path_to_rect", &_path_module::clip_path_to_rect,
                            "clip_path_to_rect(path, bbox, inside)");
+        add_varargs_method("clip_path_line_to_path", &_path_module::clip_path_line_to_path,
+                           "clip_path_line_to_path(path, clip_path)");
         add_varargs_method("affine_transform", &_path_module::affine_transform,
                            "affine_transform(vertices, transform)");
         add_varargs_method("count_bboxes_overlapping_bbox", &_path_module::count_bboxes_overlapping_bbox,
@@ -76,6 +98,7 @@ private:
     Py::Object point_in_path_collection(const Py::Tuple& args);
     Py::Object path_in_path(const Py::Tuple& args);
     Py::Object clip_path_to_rect(const Py::Tuple& args);
+    Py::Object clip_path_line_to_path(const Py::Tuple& args);
     Py::Object affine_transform(const Py::Tuple& args);
     Py::Object count_bboxes_overlapping_bbox(const Py::Tuple& args);
     Py::Object path_intersects_path(const Py::Tuple& args);
@@ -820,6 +843,83 @@ _path_module::path_in_path(const Py::Tuple& args)
     return Py::Int(::path_in_path(a, atrans, b, btrans));
 }
 
+
+inline bool
+segments_intersect(const double& x1, const double& y1,
+                   const double& x2, const double& y2,
+                   const double& x3, const double& y3,
+                   const double& x4, const double& y4)
+{
+    double den = ((y4 - y3) * (x2 - x1)) - ((x4 - x3) * (y2 - y1));
+    if (den == 0.0)
+    {
+        return false;
+    }
+
+    double n1 = ((x4 - x3) * (y1 - y3)) - ((y4 - y3) * (x1 - x3));
+    double n2 = ((x2 - x1) * (y1 - y3)) - ((y2 - y1) * (x1 - x3));
+
+    double u1 = n1 / den;
+    double u2 = n2 / den;
+
+    return (u1 >= 0.0 && u1 <= 1.0 &&
+            u2 >= 0.0 && u2 <= 1.0);
+}
+
+
+
+inline bool
+segments_intersect(const double& x1, const double& y1,
+                   const double& x2, const double& y2,
+                   const double& x3, const double& y3,
+                   const double& x4, const double& y4)
+{
+    double den = ((y4 - y3) * (x2 - x1)) - ((x4 - x3) * (y2 - y1));
+    if (den == 0.0)
+    {
+        return false;
+    }
+
+    double n1 = ((x4 - x3) * (y1 - y3)) - ((y4 - y3) * (x1 - x3));
+    double n2 = ((x2 - x1) * (y1 - y3)) - ((y2 - y1) * (x1 - x3));
+
+    double u1 = n1 / den;
+    double u2 = n2 / den;
+
+    return (u1 >= 0.0 && u1 <= 1.0 &&
+            u2 >= 0.0 && u2 <= 1.0);
+}
+
+
+
+def intersection_point(p0, p1, p2, p3):
+    """
+    Return the intersection point of the two infinite lines that pass through
+    point p0->p1 and p2->p3 respectively.
+
+    """
+    x_1, y_1 = p0
+    x_2, y_2 = p1
+    x_3, y_3 = p2
+    x_4, y_4 = p3
+
+    div = (x_1 - x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 - x_4)
+
+    if div == 0:
+        raise ValueError('Lines are parallel and cannot '
+                         'intersect at any one point.')
+
+    x = ((x_1 * y_2 - y_1 * x_2) * (x_3 - x_4) - (x_1 - x_2) * (x_3 *
+         y_4 - y_3 * x_4)) / div
+    y = ((x_1 * y_2 - y_1 * x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 *
+         y_4 - y_3 * x_4)) / div
+
+    return x, y
+
+
+
+
+
 /** The clip_path_to_rect code here is a clean-room implementation of
     the Sutherland-Hodgman clipping algorithm described here:
 
@@ -1096,6 +1196,178 @@ _path_module::clip_path_to_rect(const Py::Tuple &args)
     return Py::Object(py_results, true);
 }
 
+
+
+void
+clip_line_to_path(PathIterator& path, PathIterator& clip_path,
+                  std::vector<Polygon>& results)
+{
+    double px0, py0, px1, py1, cx0, cy0, cx1, cy1;
+    Polygon clipped_polygon, polygon, clip_poly;
+    double x = 0, y = 0;
+    unsigned code = 0;
+    path.rewind(0);
+    clip_path.rewind(0);
+
+    unsigned clip_code = 0;
+    do
+    {
+        if (clip_code == agg::path_cmd_move_to)
+        {
+            clip_poly.push_back(XY(x, y));
+        }
+
+        clip_code = clip_path.vertex(&x, &y);
+
+        if (clip_code == agg::path_cmd_stop)
+        {
+            break;
+        }
+
+        if (clip_code != agg::path_cmd_move_to)
+        {
+            clip_poly.push_back(XY(x, y));
+        }
+    }
+    while ((clip_code & agg::path_cmd_end_poly) != agg::path_cmd_end_poly);
+
+    x = 0, y = 0;
+    do
+    {
+        // Grab the next subpath and store it in polygon1
+        polygon.clear();
+        do
+        {
+            if (code == agg::path_cmd_move_to)
+            {
+                polygon.push_back(XY(x, y));
+            }
+
+            code = path.vertex(&x, &y);
+
+            if (code == agg::path_cmd_stop)
+            {
+                break;
+            }
+
+            if (code != agg::path_cmd_move_to)
+            {
+                polygon.push_back(XY(x, y));
+            }
+        }
+        while ((code & agg::path_cmd_end_poly) != agg::path_cmd_end_poly);
+
+
+        // The result of each step is fed into the next (note the
+        // swapping of polygon1 and polygon2 at each step).
+        // clip_to_rect_one_step(polygon1, polygon2, clip_to_rect_filters::xlt(xmax));
+        // clip_to_rect_one_step(polygon2, polygon1, clip_to_rect_filters::xgt(xmin));
+        // clip_to_rect_one_step(polygon1, polygon2, clip_to_rect_filters::ylt(ymax));
+        // clip_to_rect_one_step(polygon2, polygon1, clip_to_rect_filters::ygt(ymin));
+
+
+    px0 = polygon.back().x;
+    py0 = polygon.back().y;
+    for (Polygon::const_iterator i = polygon.begin(); i != polygon.end(); ++i)
+    {
+    
+        px1 = i->x;
+        py1 = i->y;
+        
+        std::cout << px0 << ", " << py0 << ", " << px1 << ", " << py1 << '\n';
+        
+            cx0 = clip_poly.back().x;
+            cy0 = clip_poly.back().y;
+            for (Polygon::const_iterator j = clip_poly.begin(); j != clip_poly.end(); ++j)
+            {
+                cx1 = j->x;
+                cy1 = j->y;
+                
+                std::cout << "CLIP COORD: " << cx0 << ", " << cy0 << ", " << cx1 << ", " << cy1 << '\n';                
+                
+                if (segments_intersect(px0, py0, px1, py1, cx0, cy0, cx1, cy1))
+                {
+                
+                double div = (x_1 - x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 - x_4);
+                
+                std::cout << "Intersects!\n";
+                clipped_polygon.push_back(XY(px0, py0));
+                }
+                
+                cx0 = cx1;
+                cy0 = cy1;
+            }
+        
+        px0 = px1;
+        py0 = py1;
+    }
+
+
+        // Empty polygons aren't very useful, so skip them
+        if (clipped_polygon.size())
+        {
+            results.push_back(clipped_polygon);
+        }
+    }
+    while (code != agg::path_cmd_stop);
+}
+
+
+Py::Object
+_path_module::clip_path_line_to_path(const Py::Tuple &args)
+{
+    args.verify_length(2);
+
+    PathIterator path(args[0]);
+    PathIterator clip_path(args[1]);
+    
+    std::vector<Polygon> results;
+
+    ::clip_line_to_path(path, clip_path, results);
+
+    npy_intp dims[2];
+    dims[1] = 2;
+    PyObject* py_results = PyList_New(results.size());
+    if (!py_results)
+    {
+        throw Py::RuntimeError("Error creating results list");
+    }
+
+    try
+    {
+        for (std::vector<Polygon>::const_iterator p = results.begin(); p != results.end(); ++p)
+        {
+            size_t size = p->size();
+            dims[0] = p->size();
+            PyArrayObject* pyarray = (PyArrayObject*)PyArray_SimpleNew(2, dims, PyArray_DOUBLE);
+            if (pyarray == NULL)
+            {
+                throw Py::MemoryError("Could not allocate result array");
+            }
+            for (size_t i = 0; i < size; ++i)
+            {
+                ((double *)pyarray->data)[2*i]   = (*p)[i].x;
+                ((double *)pyarray->data)[2*i+1] = (*p)[i].y;
+            }
+            if (PyList_SetItem(py_results, p - results.begin(), (PyObject *)pyarray) == -1)
+            {
+                throw Py::RuntimeError("Error creating results list");
+            }
+        }
+    }
+    catch (...)
+    {
+        Py_XDECREF(py_results);
+        throw;
+    }
+
+    return Py::Object(py_results, true);
+}
+
+
+
+
+
 Py::Object
 _path_module::affine_transform(const Py::Tuple& args)
 {
@@ -1263,27 +1535,7 @@ _path_module::count_bboxes_overlapping_bbox(const Py::Tuple& args)
     return Py::Int(count);
 }
 
-inline bool
-segments_intersect(const double& x1, const double& y1,
-                   const double& x2, const double& y2,
-                   const double& x3, const double& y3,
-                   const double& x4, const double& y4)
-{
-    double den = ((y4 - y3) * (x2 - x1)) - ((x4 - x3) * (y2 - y1));
-    if (den == 0.0)
-    {
-        return false;
-    }
 
-    double n1 = ((x4 - x3) * (y1 - y3)) - ((y4 - y3) * (x1 - x3));
-    double n2 = ((x2 - x1) * (y1 - y3)) - ((y2 - y1) * (x1 - x3));
-
-    double u1 = n1 / den;
-    double u2 = n2 / den;
-
-    return (u1 >= 0.0 && u1 <= 1.0 &&
-            u2 >= 0.0 && u2 <= 1.0);
-}
 
 bool
 path_intersects_path(PathIterator& p1, PathIterator& p2)

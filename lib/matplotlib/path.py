@@ -12,7 +12,7 @@ from numpy import ma
 from matplotlib._path import point_in_path, get_path_extents, \
     point_in_path_collection, get_path_collection_extents, \
     path_in_path, path_intersects_path, convert_path_to_polygons, \
-    cleanup_path, points_in_path, clip_path_to_rect
+    cleanup_path, points_in_path, clip_path_to_rect, clip_path_line_to_path
 from matplotlib.cbook import simple_linear_interpolation, maxdict
 from matplotlib import rcParams
 
@@ -722,6 +722,11 @@ class Path(object):
         """
         # Use make_compound_path_from_polys
         verts = clip_path_to_rect(self, bbox, inside)
+        paths = [Path(poly) for poly in verts]
+        return self.make_compound_path(*paths)
+    
+    def clip_line_to_bbox(self, clip_path):
+        verts = clip_path_line_to_path(self, clip_path)
         paths = [Path(poly) for poly in verts]
         return self.make_compound_path(*paths)
 
