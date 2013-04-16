@@ -31,6 +31,7 @@
 #include "agg_pixfmt_amask_adaptor.h"
 #include "agg_rasterizer_outline.h"
 #include "agg_rasterizer_scanline_aa.h"
+#include "agg_rasterizer_compound_aa.h"
 #include "agg_renderer_outline_aa.h"
 #include "agg_renderer_raster_text.h"
 #include "agg_renderer_scanline.h"
@@ -58,6 +59,7 @@ typedef agg::renderer_base<pixfmt> renderer_base;
 typedef agg::renderer_scanline_aa_solid<renderer_base> renderer_aa;
 typedef agg::renderer_scanline_bin_solid<renderer_base> renderer_bin;
 typedef agg::rasterizer_scanline_aa<agg::rasterizer_sl_clip_dbl> rasterizer;
+typedef agg::rasterizer_compound_aa<agg::rasterizer_sl_clip_dbl> compound_rasterizer;
 
 typedef agg::scanline_p8 scanline_p8;
 typedef agg::scanline_u8 scanline_u8;
@@ -157,9 +159,31 @@ protected:
 };
 
 
-//struct AMRenderer {
-//
-//}
+class StyleHandlerElement {
+  public:
+    bool is_solid;
+    agg::rgba8 color;
+    // span type
+};
+
+
+class SolidStyle : public StyleHandlerElement {
+  public:
+    SolidStyle();
+    SolidStyle(agg::rgba8);
+};
+
+
+class StyleHandler {
+  public:
+    StyleHandler();
+    std::vector<StyleHandlerElement> styles;
+    bool is_solid(unsigned) const;
+    unsigned add_style(StyleHandlerElement);
+    const agg::rgba8 color(unsigned) const;
+    void generate_span(agg::rgba8*, int, int, unsigned, unsigned);
+};
+
 
 // the renderer
 class RendererAgg: public Py::PythonExtension<RendererAgg>
@@ -232,6 +256,10 @@ public:
     renderer_aa rendererAA;
     renderer_bin rendererBin;
     rasterizer theRasterizer;
+    compound_rasterizer compoundRasterizer;
+
+    rasterizer hatchRasterizer;
+    StyleHandler styleHandler;
 
     Py::Object lastclippath;
     agg::trans_affine lastclippath_transform;
@@ -255,6 +283,10 @@ protected:
     template<class PathIteratorType>
     void _draw_path(PathIteratorType& path, bool has_clippath,
                     const facepair_t& face, const GCAgg& gc);
+
+    template<class PathIteratorType>
+        void _draw_path_compound(PathIteratorType& path, bool has_clippath,
+                        const facepair_t& face, const GCAgg& gc);
 
     template<class PathGenerator, int check_snap, int has_curves>
     Py::Object

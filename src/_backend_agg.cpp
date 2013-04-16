@@ -376,6 +376,40 @@ GCAgg::_set_hatch_path(const Py::Object& gc)
 }
 
 
+SolidStyle::SolidStyle() {
+};
+
+SolidStyle::SolidStyle(agg::rgba8 style_color) {
+   is_solid = true;
+   color = style_color;
+};
+
+StyleHandler::StyleHandler() : styles() {
+};
+
+bool StyleHandler::is_solid(unsigned style) const {
+   return styles[style].is_solid;
+};
+
+unsigned StyleHandler::add_style(StyleHandlerElement style) {
+   std::cout << "Adding style: " << style.is_solid ;//<< std::endl;
+   styles.push_back(style);
+   std::cout << " " << styles.size() - 1 << std::endl;
+   return unsigned(styles.size() - 1);
+};
+
+#include <typeinfo>
+const agg::rgba8 StyleHandler::color(unsigned style) const {
+	// " " << typeid(styles[style].color).name()
+   std::cout << style << " red: " << (unsigned) styles[style].color.r << ", ";
+   return styles[style].color;
+};
+
+void StyleHandler::generate_span(agg::rgba8* span, int x, int y, unsigned len, unsigned style) {
+	std::cout << "WOWZERS!!!\n";
+};
+
+
 const size_t
 RendererAgg::PIXELS_PER_INCH(96);
 
@@ -402,6 +436,8 @@ RendererAgg::RendererAgg(unsigned int width, unsigned int height, double dpi,
     rendererAA(),
     rendererBin(),
     theRasterizer(),
+    compoundRasterizer(),
+    styleHandler(),
     debug(debug)
 {
     _VERBOSE("RendererAgg::RendererAgg");
@@ -1183,6 +1219,269 @@ void RendererAgg::_draw_path(path_t& path, bool has_clippath,
     typedef agg::conv_dash<path_t>                             dash_t;
     typedef agg::conv_stroke<dash_t>                           stroke_dash_t;
 
+    bool compound = true;
+
+    // Render face
+    if (face.first)
+    {
+    	if (compound) {
+    		agg::span_allocator<agg::rgba8> spanAllocator;
+    		SolidStyle style(face.second);
+//    		if (styleHandler.styles.size() == 0) {
+//    			style.color = agg::rgba8(100, 10, 0, 100);
+//    		}
+//    		else {
+//    			style.color = agg::rgba8(10, 10, 100, 100);
+//    		}
+
+    		unsigned style_id = styleHandler.add_style(style);
+    		compoundRasterizer.styles(style_id, -1);
+
+    		// Check that the thing has color
+    		agg:: rgba8 wibble = styleHandler.color(style_id);
+
+
+    		try {
+    			compoundRasterizer.add_path(path);
+			}
+    		catch (std::overflow_error &e) {
+				throw Py::OverflowError(e.what());
+			}
+    		if (styleHandler.styles.size() == 2) {
+    			std::cout << "Rendering! \n" ;
+    		agg::render_scanlines_compound(compoundRasterizer, slineU8, slineBin, rendererBase,
+    				spanAllocator, styleHandler);
+    		}
+    	}
+		else
+		{
+			try {
+				theRasterizer.add_path(path);
+			} catch (std::overflow_error &e) {
+				throw Py::OverflowError(e.what());
+			}
+
+			if (gc.isaa)
+			{
+				if (has_clippath)
+				{
+					pixfmt_amask_type pfa(pixFmt, alphaMask);
+					amask_ren_type r(pfa);
+					amask_aa_renderer_type ren(r);
+					ren.color(face.second);
+					agg::render_scanlines(theRasterizer, scanlineAlphaMask, ren);
+				}
+				else
+				{
+					rendererAA.color(face.second);
+					agg::render_scanlines(theRasterizer, slineU8, rendererAA);
+				}
+			}
+			else
+			{
+				if (has_clippath)
+				{
+					pixfmt_amask_type pfa(pixFmt, alphaMask);
+					amask_ren_type r(pfa);
+					amask_bin_renderer_type ren(r);
+					ren.color(face.second);
+					agg::render_scanlines(theRasterizer, scanlineAlphaMask, ren);
+				}
+				else
+				{
+					rendererBin.color(face.second);
+					agg::render_scanlines(theRasterizer, slineBin, rendererBin);
+				}
+			}
+		}
+    }
+
+    // Render hatch
+    if (!gc.hatchpath.isNone())
+    {
+        // Create and transform the path
+        typedef agg::conv_transform<PathIterator> hatch_path_trans_t;
+        typedef agg::conv_curve<hatch_path_trans_t> hatch_path_curve_t;
+        typedef agg::conv_stroke<hatch_path_curve_t> hatch_path_stroke_t;
+
+        PathIterator hatch_path(gc.hatchpath);
+        agg::trans_affine hatch_trans;
+        hatch_trans *= agg::trans_affine_scaling(1.0, -1.0);
+        hatch_trans *= agg::trans_affine_translation(0.0, 1.0);
+        hatch_trans *= agg::trans_affine_scaling(HATCH_SIZE, HATCH_SIZE);
+        hatch_path_trans_t hatch_path_trans(hatch_path, hatch_trans);
+        hatch_path_curve_t hatch_path_curve(hatch_path_trans);
+        hatch_path_stroke_t hatch_path_stroke(hatch_path_curve);
+        hatch_path_stroke.width(1.0);
+        hatch_path_stroke.line_cap(agg::square_cap);
+
+        // Render the path into the hatch buffer
+        pixfmt hatch_img_pixf(hatchRenderingBuffer);
+        renderer_base rb(hatch_img_pixf);
+        renderer_aa rs(rb);
+        rb.clear(agg::rgba(0.0, 0.0, 0.0, 0.0));
+        // Fill the hatch with the line color.
+        rs.color(gc.color);
+
+        // Draw solids
+        try {
+            hatchRasterizer.add_path(hatch_path_curve);
+        } catch (std::overflow_error &e) {
+            throw Py::OverflowError(e.what());
+        }
+        agg::render_scanlines(hatchRasterizer, slineU8, rs);
+
+        // Draw outline.
+        try {
+        	hatchRasterizer.add_path(hatch_path_stroke);
+        } catch (std::overflow_error &e) {
+            throw Py::OverflowError(e.what());
+        }
+        agg::render_scanlines(hatchRasterizer, slineU8, rs);
+
+        // Transfer the hatch to the main image buffer
+        typedef agg::image_accessor_wrap < pixfmt,
+        agg::wrap_mode_repeat_auto_pow2,
+        agg::wrap_mode_repeat_auto_pow2 > hatch_image_accessor_type;
+        typedef agg::span_pattern_rgba<hatch_image_accessor_type> hatch_span_gen_type;
+        agg::span_allocator<agg::rgba8> sa;
+        hatch_image_accessor_type img_src(hatch_img_pixf);
+        hatch_span_gen_type sg(img_src, 0, 0);
+
+        try {
+            theRasterizer.add_path(path);
+        } catch (std::overflow_error &e) {
+            throw Py::OverflowError(e.what());
+        }
+
+        if (has_clippath)
+        {
+			pixfmt_amask_type pfa(pixFmt, alphaMask);
+			amask_ren_type ren(pfa);
+			agg::render_scanlines_aa(theRasterizer, slineU8, ren, sa, sg);
+        }
+        else
+        {
+        	agg::render_scanlines_aa(theRasterizer, slineU8, rendererBase, sa, sg);
+        }
+    }
+
+    // Render stroke
+    if (gc.linewidth != 0.0)
+    {
+        double linewidth = gc.linewidth;
+        if (!gc.isaa)
+        {
+            linewidth = (linewidth < 0.5) ? 0.5 : mpl_round(linewidth);
+        }
+        if (gc.dashes.size() == 0)
+        {
+            stroke_t stroke(path);
+            stroke.width(linewidth);
+            stroke.line_cap(gc.cap);
+            stroke.line_join(gc.join);
+            try {
+                if (compound) {
+                	compoundRasterizer.add_path(stroke);
+                }
+                else {
+                	theRasterizer.add_path(stroke);
+                }
+            } catch (std::overflow_error &e) {
+                throw Py::OverflowError(e.what());
+            }
+        }
+        else
+        {
+            dash_t dash(path);
+            for (GCAgg::dash_t::const_iterator i = gc.dashes.begin();
+                    i != gc.dashes.end(); ++i)
+            {
+                double val0 = i->first;
+                double val1 = i->second;
+                if (!gc.isaa)
+                {
+                    val0 = (int)val0 + 0.5;
+                    val1 = (int)val1 + 0.5;
+                }
+                dash.add_dash(val0, val1);
+            }
+            stroke_dash_t stroke(dash);
+            stroke.line_cap(gc.cap);
+            stroke.line_join(gc.join);
+            stroke.width(linewidth);
+            try {
+                if (compound) {
+                	compoundRasterizer.add_path(stroke);
+                }
+                else {
+                	theRasterizer.add_path(stroke);
+                }
+            } catch (std::overflow_error &e) {
+                throw Py::OverflowError(e.what());
+            }
+        }
+
+        if (compound) {
+			agg::span_allocator<agg::rgba8> spanAllocator;
+			SolidStyle style(gc.color);
+
+			unsigned style_id = styleHandler.add_style(style);
+			compoundRasterizer.styles(style_id, -1);
+
+			// Check that the thing has color
+			agg:: rgba8 wibble = styleHandler.color(style_id);
+
+//			if (styleHandler.styles.size() == 2) {
+				std::cout << "Rendering! \n" ;
+			agg::render_scanlines_compound(compoundRasterizer, slineU8, slineBin, rendererBase,
+					spanAllocator, styleHandler);
+//			}
+		}
+        else if (gc.isaa)
+        {
+            if (has_clippath)
+            {
+                pixfmt_amask_type pfa(pixFmt, alphaMask);
+                amask_ren_type r(pfa);
+                amask_aa_renderer_type ren(r);
+                ren.color(gc.color);
+                agg::render_scanlines(theRasterizer, scanlineAlphaMask, ren);
+            }
+            else
+            {
+                rendererAA.color(gc.color);
+                agg::render_scanlines(theRasterizer, slineU8, rendererAA);
+            }
+        }
+        else
+        {
+            if (has_clippath)
+            {
+                pixfmt_amask_type pfa(pixFmt, alphaMask);
+                amask_ren_type r(pfa);
+                amask_bin_renderer_type ren(r);
+                ren.color(gc.color);
+                agg::render_scanlines(theRasterizer, scanlineAlphaMask, ren);
+            }
+            else
+            {
+                rendererBin.color(gc.color);
+                agg::render_scanlines(theRasterizer, slineBin, rendererBin);
+            }
+        }
+    }
+}
+
+
+template<class path_t>
+void RendererAgg::_draw_path_compound(path_t& path, bool has_clippath,
+                                      const facepair_t& face, const GCAgg& gc)
+{
+    typedef agg::conv_stroke<path_t>                           stroke_t;
+    typedef agg::conv_dash<path_t>                             dash_t;
+    typedef agg::conv_stroke<dash_t>                           stroke_dash_t;
+
     // Render face
     if (face.first)
     {
@@ -1231,8 +1530,8 @@ void RendererAgg::_draw_path(path_t& path, bool has_clippath,
     {
         // Reset any clipping that may be in effect, since we'll be
         // drawing the hatch in a scratch buffer at origin (0, 0)
-        theRasterizer.reset_clipping();
-        rendererBase.reset_clipping(true);
+//        theRasterizer.reset_clipping();
+//        rendererBase.reset_clipping(true);
 
         // Create and transform the path
         typedef agg::conv_transform<PathIterator> hatch_path_trans_t;
@@ -1279,13 +1578,13 @@ void RendererAgg::_draw_path(path_t& path, bool has_clippath,
         // Transfer the hatch to the main image buffer
         typedef agg::image_accessor_wrap < pixfmt,
         agg::wrap_mode_repeat_auto_pow2,
-        agg::wrap_mode_repeat_auto_pow2 > img_source_type;
-        typedef agg::span_pattern_rgba<img_source_type> span_gen_type;
+        agg::wrap_mode_repeat_auto_pow2 > hatch_image_accessor_type;
+        typedef agg::span_pattern_rgba<hatch_image_accessor_type> hatch_span_gen_type;
         agg::span_allocator<agg::rgba8> sa;
-        img_source_type img_src(hatch_img_pixf);
-        span_gen_type sg(img_src, 0, 0);
+        hatch_image_accessor_type img_src(hatch_img_pixf);
+        hatch_span_gen_type sg(img_src, 0, 0);
         try {
-            theRasterizer.add_path(path);
+            hatchRasterizer.add_path(path);
         } catch (std::overflow_error &e) {
             throw Py::OverflowError(e.what());
         }
@@ -1298,7 +1597,7 @@ void RendererAgg::_draw_path(path_t& path, bool has_clippath,
         }
         else
         {
-		agg::render_scanlines_aa(theRasterizer, slineU8, rendererBase, sa, sg);
+        	agg::render_scanlines_aa(theRasterizer, slineU8, rendererBase, sa, sg);
         }
 
     }
@@ -1383,6 +1682,7 @@ void RendererAgg::_draw_path(path_t& path, bool has_clippath,
         }
     }
 }
+
 
 
 Py::Object
