@@ -302,7 +302,7 @@ class Axes3D(Axes):
         """
         Set whether autoscaling is applied on plot commands
 
-        accepts: [ *True* | *False* ]
+        b : bool
 
         .. versionadded :: 1.1.0
             This function was added, but not tested. Please report any bugs.
@@ -314,7 +314,7 @@ class Axes3D(Axes):
         """
         Set whether autoscaling for the z-axis is applied on plot commands
 
-        accepts: [ *True* | *False* ]
+        b : bool
 
         .. versionadded :: 1.1.0
             This function was added, but not tested. Please report any bugs.
@@ -328,7 +328,7 @@ class Axes3D(Axes):
         *m* times the data interval will be added to each
         end of that interval before it is used in autoscaling.
 
-        accepts: float in range 0 to 1
+        m : float in range 0 to 1
 
         .. versionadded :: 1.1.0
             This function was added, but not tested. Please report any bugs.
@@ -780,7 +780,7 @@ class Axes3D(Axes):
 
         Set the scaling of the z-axis: %(scale)s
 
-        ACCEPTS: [%(scale)s]
+        value : [%(scale)s]
 
         Different kwargs are accepted, depending on the scale:
         %(scale_docs)s
@@ -1206,7 +1206,7 @@ class Axes3D(Axes):
         """
         Set whether the 3D axes panels are drawn
 
-        ACCEPTS: [ *True* | *False* ]
+        b : bool
 
         .. versionadded :: 1.1.0
         """
@@ -1230,7 +1230,7 @@ class Axes3D(Axes):
 
         For axes3d objects, this will ignore any settings and just use *True*
 
-        ACCEPTS: [ *True* | *False* ]
+        b : bool
 
         .. versionadded :: 1.1.0
             This function was added for completeness.

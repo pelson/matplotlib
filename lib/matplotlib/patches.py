@@ -233,7 +233,10 @@ class Patch(artist.Artist):
         """
         Set whether to use antialiased rendering
 
-        ACCEPTS: [True | False]  or None for default
+        aa : {None, True, False}
+            whether to use antialiased rendering, ``aa=None`` indicates the 
+            use of the 'patch.antialiased' rc parameter.
+        
         """
         if aa is None:
             aa = mpl.rcParams['patch.antialiased']
@@ -247,7 +250,10 @@ class Patch(artist.Artist):
         """
         Set the patch edge color
 
-        ACCEPTS: mpl color spec, or None for default, or 'none' for no color
+        color : {None, mpl color spec, 'none'}
+            The patch edge color. ``'none'`` indicates no color, ``None``
+            indicates the use of the 'patch.edgecolor' rc parameter.
+        
         """
         if color is None:
             color = mpl.rcParams['patch.edgecolor']
@@ -261,12 +267,15 @@ class Patch(artist.Artist):
         """
         Set the patch face color
 
-        ACCEPTS: mpl color spec, or None for default, or 'none' for no color
+        color : {None, mpl color spec, 'none'}
+            The patch face color. ``'none'`` indicates no color, ``None``
+            indicates the use of the 'patch.facecolor' rc parameter.
         """
         if color is None:
             color = mpl.rcParams['patch.facecolor']
-        self._original_facecolor = color  # save: otherwise changing _fill
-                                          # may lose alpha information
+        # save the original, otherwise changing _fill may lose alpha
+        # information
+        self._original_facecolor = color
         self._facecolor = colors.colorConverter.to_rgba(color, self._alpha)
         if not self._fill:
             self._facecolor = list(self._facecolor)
@@ -280,7 +289,10 @@ class Patch(artist.Artist):
         """
         Set both the edgecolor and the facecolor.
 
-        ACCEPTS: matplotlib color spec
+        color : {None, mpl color spec, 'none'}
+            The patch edge and face colors. ``'none'`` indicates no color,
+            ``None`` indicates the use of the respective 'patch.edgecolor'
+            and 'patch.facecolor' rc parameters.
 
         .. seealso::
 
@@ -292,9 +304,11 @@ class Patch(artist.Artist):
 
     def set_alpha(self, alpha):
         """
-        Set the alpha tranparency of the patch.
+        Set the alpha transparency of the patch.
 
-        ACCEPTS: float or None
+        alpha: {float, None}
+            The alpha transparency of the patch.
+        
         """
         if alpha is not None:
             try:
@@ -302,8 +316,8 @@ class Patch(artist.Artist):
             except TypeError:
                 raise TypeError('alpha must be a float or None')
         artist.Artist.set_alpha(self, alpha)
-        self.set_facecolor(self._original_facecolor)  # using self._fill and
-                                                      # self._alpha
+        # using self._fill and self._alpha
+        self.set_facecolor(self._original_facecolor)  
         self._edgecolor = colors.colorConverter.to_rgba(
                                         self._edgecolor[:3], self._alpha)
 
@@ -311,7 +325,10 @@ class Patch(artist.Artist):
         """
         Set the patch linewidth in points
 
-        ACCEPTS: float or None for default
+        w : {None, float}
+            The patch linewidth, in points. ``None`` indicates the use of 
+            the 'patch.linewidth' rc parameter. 
+        
         """
         if w is None:
             w = mpl.rcParams['patch.linewidth']
@@ -325,27 +342,31 @@ class Patch(artist.Artist):
         """
         Set the patch linestyle
 
-        ACCEPTS: ['solid' | 'dashed' | 'dashdot' | 'dotted']
+        ls : {None, 'solid', 'dashed', 'dashdot', 'dotted'}
+            The patch linestyle. ``None`` is an alias for 'solid'. 
+        
         """
         if ls is None:
             ls = "solid"
         self._linestyle = ls
 
     def set_ls(self, ls):
-        """alias for set_linestyle"""
+        """Alias for :meth:`set_linestyle`."""
         return self.set_linestyle(ls)
 
     def set_fill(self, b):
         """
         Set whether to fill the patch
 
-        ACCEPTS: [True | False]
+        b : boolean
+            Whether to fill the patch.
+
         """
         self._fill = bool(b)
         self.set_facecolor(self._original_facecolor)
 
     def get_fill(self):
-        'return whether fill is set'
+        """Return whether fill is set."""
         return self._fill
 
     # Make fill a property so as to preserve the long-standing
@@ -357,38 +378,38 @@ class Patch(artist.Artist):
         """
         Set the hatching pattern
 
-        *hatch* can be one of::
+        hatch : str of hatch pattern
+            hatch can be one of::
+    
+              /   - diagonal hatching
+              \   - back diagonal
+              |   - vertical
+              -   - horizontal
+              +   - crossed
+              x   - crossed diagonal
+              o   - small circle
+              O   - large circle
+              .   - dots
+              *   - stars
+    
+            Letters can be combined, in which case all the specified
+            hatchings are done.  If same letter repeats, it increases the
+            density of hatching of that pattern.
+    
+            Hatching is supported in the PostScript, PDF, SVG and Agg
+            backends only.
 
-          /   - diagonal hatching
-          \   - back diagonal
-          |   - vertical
-          -   - horizontal
-          +   - crossed
-          x   - crossed diagonal
-          o   - small circle
-          O   - large circle
-          .   - dots
-          *   - stars
-
-        Letters can be combined, in which case all the specified
-        hatchings are done.  If same letter repeats, it increases the
-        density of hatching of that pattern.
-
-        Hatching is supported in the PostScript, PDF, SVG and Agg
-        backends only.
-
-        ACCEPTS: ['/' | '\\\\' | '|' | '-' | '+' | 'x' | 'o' | 'O' | '.' | '*']
         """
         self._hatch = hatch
 
     def get_hatch(self):
-        'Return the current hatching pattern'
+        """Return the current hatching pattern."""
         return self._hatch
 
     def set_path_effects(self, path_effects):
         """
         set path_effects, which should be a list of instances of
-        matplotlib.patheffect._Base class or its derivatives.
+        matplotlib.patheffects._Base class or its derivatives.
         """
         self._path_effects = path_effects
 
@@ -397,7 +418,7 @@ class Patch(artist.Artist):
 
     @allow_rasterization
     def draw(self, renderer):
-        'Draw the :class:`Patch` to the given *renderer*.'
+        """Draw the :class:`Patch` to the given *renderer*."""
         if not self.get_visible():
             return
 
@@ -444,9 +465,7 @@ class Patch(artist.Artist):
         renderer.close_group('patch')
 
     def get_path(self):
-        """
-        Return the path of this patch
-        """
+        """Return the path of this patch."""
         raise NotImplementedError('Derived must override')
 
     def get_window_extent(self, renderer=None):
@@ -621,7 +640,7 @@ class Rectangle(Patch):
         """
         Set the left coord of the rectangle
 
-        ACCEPTS: float
+        x : float
         """
         self._x = x
 
@@ -629,7 +648,7 @@ class Rectangle(Patch):
         """
         Set the bottom coord of the rectangle
 
-        ACCEPTS: float
+        y : float
         """
         self._y = y
 
@@ -637,36 +656,38 @@ class Rectangle(Patch):
         """
         Set the left and bottom coords of the rectangle
 
-        ACCEPTS: 2-item sequence
+        xy : sequence of length 2
+             The left and bottom coords of the rectangle in a
+             length 2 sequence.
         """
         self._x, self._y = xy
 
     def set_width(self, w):
         """
-        Set the width rectangle
+        Set the width of the rectangle.
 
-        ACCEPTS: float
+        w : float
         """
         self._width = w
 
     def set_height(self, h):
         """
-        Set the width rectangle
+        Set the height of the rectangle.
 
-        ACCEPTS: float
+        h : float
         """
         self._height = h
 
-    def set_bounds(self, *args):
+    def set_bounds(self, l, b, w, h):
         """
-        Set the bounds of the rectangle: l,b,w,h
+        Set the bounds of the rectangle in the form ``l, b, w, h``.
 
-        ACCEPTS: (left, bottom, width, height)
+        l : float
+        b : float
+        w : float
+        h : float
+
         """
-        if len(args) == 0:
-            l, b, w, h = args[0]
-        else:
-            l, b, w, h = args
         self._x = l
         self._y = b
         self._width = w
@@ -1310,7 +1331,7 @@ class Circle(Ellipse):
         """
         Set the radius of the circle
 
-        ACCEPTS: float
+        radius : float
         """
         self.width = self.height = 2 * radius
 
@@ -2268,7 +2289,7 @@ class FancyBboxPatch(Patch):
         Without argument (or with *boxstyle* = None), it returns
         available box styles.
 
-        ACCEPTS: %(AvailableBoxstyles)s
+        boxstyle : %(AvailableBoxstyles)s
 
         """
         if boxstyle is None:
@@ -2285,7 +2306,7 @@ class FancyBboxPatch(Patch):
         """
         Set the mutation scale.
 
-        ACCEPTS: float
+        scale : float
         """
         self._mutation_scale = scale
 
@@ -2299,7 +2320,7 @@ class FancyBboxPatch(Patch):
         """
         Set the aspect ratio of the bbox mutation.
 
-        ACCEPTS: float
+        aspect : float
         """
         self._mutation_aspect = aspect
 
@@ -2344,46 +2365,45 @@ class FancyBboxPatch(Patch):
 
     def set_x(self, x):
         """
-        Set the left coord of the rectangle
+        Set the left coord of the rectangle.
 
-        ACCEPTS: float
+        x : float
         """
         self._x = x
 
     def set_y(self, y):
         """
-        Set the bottom coord of the rectangle
+        Set the bottom coord of the rectangle.
 
-        ACCEPTS: float
+        y : float
         """
         self._y = y
 
     def set_width(self, w):
         """
-        Set the width rectangle
+        Set the width of the rectangle.
 
-        ACCEPTS: float
+        w : float
         """
         self._width = w
 
     def set_height(self, h):
         """
-        Set the width rectangle
+        Set the height of the rectangle.
 
-        ACCEPTS: float
+        h : float
         """
         self._height = h
 
-    def set_bounds(self, *args):
+    def set_bounds(self, l, b, w, h):
         """
-        Set the bounds of the rectangle: l,b,w,h
+        Set the bounds of the rectangle in the form ``l, b, w, h``
 
-        ACCEPTS: (left, bottom, width, height)
+        l : float
+        b : float
+        w : float
+        h : float
         """
-        if len(args) == 0:
-            l, b, w, h = args[0]
-        else:
-            l, b, w, h = args
         self._x = l
         self._y = b
         self._width = w
@@ -3921,7 +3941,9 @@ class FancyArrowPatch(Patch):
         """
         Set the mutation scale.
 
-        ACCEPTS: float
+        scale : float
+            The mutation scale.
+        
         """
         self._mutation_scale = scale
 
@@ -3935,7 +3957,8 @@ class FancyArrowPatch(Patch):
         """
         Set the aspect ratio of the bbox mutation.
 
-        ACCEPTS: float
+        aspect : float
+            The aspect ratio of the bbox mutation
         """
         self._mutation_aspect = aspect
 
@@ -4154,10 +4177,7 @@ class ConnectionPatch(FancyArrowPatch):
         self._annotation_clip = None
 
     def _get_xy(self, x, y, s, axes=None):
-        """
-        caculate the pixel position of given point
-        """
-
+        """Caculate the pixel position of the given point."""
         if axes is None:
             axes = self.axes
 
@@ -4257,13 +4277,14 @@ class ConnectionPatch(FancyArrowPatch):
 
     def set_annotation_clip(self, b):
         """
-        set *annotation_clip* attribute.
+        Set the annotation_clip attribute.
 
-          * True: the annotation will only be drawn when self.xy is inside the
-                   axes.
-          * False: the annotation will always be drawn regardless of its
-                    position.
-          * None: the self.xy will be checked only if *xycoords* is "data"
+        b : {True, False, None}
+            If True, the annotation will only be drawn when self.xy is inside
+            the axes.
+            If False, the annotation will always be drawn regardless of its
+            position.
+            If None, self.xy will be checked only if *xycoords* is "data"
         """
         self._annotation_clip = b
 
@@ -4275,10 +4296,7 @@ class ConnectionPatch(FancyArrowPatch):
         return self._annotation_clip
 
     def get_path_in_displaycoord(self):
-        """
-        Return the mutated path of the arrow in the display coord
-        """
-
+        """Return the mutated path of the arrow in the display coord."""
         dpi_cor = self.get_dpi_cor()
 
         x, y = self.xy1
@@ -4299,15 +4317,10 @@ class ConnectionPatch(FancyArrowPatch):
                                                 self.get_linewidth() * dpi_cor,
                                                 self.get_mutation_aspect()
                                                )
-
         return _path, fillable
 
     def _check_xy(self, renderer):
-        """
-        check if the annotation need to
-        be drawn.
-        """
-
+        """Check if the annotation needs to be drawn."""
         b = self.get_annotation_clip()
 
         if b or (b is None and self.coords1 == "data"):
@@ -4329,10 +4342,6 @@ class ConnectionPatch(FancyArrowPatch):
         return True
 
     def draw(self, renderer):
-        """
-        Draw.
-        """
-
         if renderer is not None:
             self._renderer = renderer
         if not self.get_visible():

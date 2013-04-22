@@ -516,7 +516,7 @@ class Axes(martist.Artist):
         """
         Set the class:`~matplotlib.axes.Axes` figure
 
-        accepts a class:`~matplotlib.figure.Figure` instance
+        fig : class:`~matplotlib.figure.Figure` instance
         """
         martist.Artist.set_figure(self, fig)
 
@@ -1081,7 +1081,7 @@ class Axes(martist.Artist):
 
     def set_adjustable(self, adjustable):
         """
-        ACCEPTS: [ 'box' | 'datalim' | 'box-forced']
+        adjustable : {'box', 'datalim', 'box-forced'}
         """
         if adjustable in ('box', 'datalim', 'box-forced'):
             if self in self._shared_x_axes or self in self._shared_y_axes:
@@ -1090,7 +1090,7 @@ class Axes(martist.Artist):
                         'adjustable must be "datalim" for shared axes')
             self._adjustable = adjustable
         else:
-            raise ValueError('argument must be "box", or "datalim"')
+            raise ValueError('argument must be "box", "box-forced", or "datalim"')
 
     def get_anchor(self):
         return self._anchor
@@ -1747,7 +1747,7 @@ class Axes(martist.Artist):
         """
         Set whether autoscaling is applied on plot commands
 
-        accepts: [ *True* | *False* ]
+        b : bool
         """
         self._autoscaleXon = b
         self._autoscaleYon = b
@@ -1756,7 +1756,7 @@ class Axes(martist.Artist):
         """
         Set whether autoscaling for the x-axis is applied on plot commands
 
-        accepts: [ *True* | *False* ]
+        b : bool
         """
         self._autoscaleXon = b
 
@@ -1764,7 +1764,7 @@ class Axes(martist.Artist):
         """
         Set whether autoscaling for the y-axis is applied on plot commands
 
-        accepts: [ *True* | *False* ]
+        b : bool
         """
         self._autoscaleYon = b
 
@@ -1775,7 +1775,7 @@ class Axes(martist.Artist):
         *m* times the data interval will be added to each
         end of that interval before it is used in autoscaling.
 
-        accepts: float in range 0 to 1
+        m : float in range 0 to 1
         """
         if m < 0 or m > 1:
             raise ValueError("margin must be in range 0 to 1")
@@ -1788,7 +1788,7 @@ class Axes(martist.Artist):
         *m* times the data interval will be added to each
         end of that interval before it is used in autoscaling.
 
-        accepts: float in range 0 to 1
+        m : float in range 0 to 1
         """
         if m < 0 or m > 1:
             raise ValueError("margin must be in range 0 to 1")
@@ -2121,7 +2121,7 @@ class Axes(martist.Artist):
         """
         Set whether the axes rectangle patch is drawn
 
-        ACCEPTS: [ *True* | *False* ]
+        b : bool
         """
         self._frameon = b
 
@@ -2136,7 +2136,7 @@ class Axes(martist.Artist):
         Set whether the axis ticks and gridlines are above or below most
         artists
 
-        ACCEPTS: [ *True* | *False* ]
+        b : bool
         """
         self._axisbelow = b
 
@@ -2399,8 +2399,8 @@ class Axes(martist.Artist):
         """
         set the axes background color
 
-        ACCEPTS: any matplotlib color - see
-        :func:`~matplotlib.pyplot.colors`
+        color : {None, a matplotlib color spec, 'none'}
+            See :func:`~matplotlib.patches.Patch.set_facecolor` for details.
         """
 
         self._axisbg = color
@@ -2506,7 +2506,6 @@ class Axes(martist.Artist):
 
         Returns the current xlimits as a length 2 tuple
 
-        ACCEPTS: length 2 sequence of floats
         """
         if 'xmin' in kw:
             left = kw.pop('xmin')
@@ -2568,7 +2567,7 @@ class Axes(martist.Artist):
 
         Set the scaling of the x-axis: %(scale)s
 
-        ACCEPTS: [%(scale)s]
+        value : [%(scale)s]
 
         Different kwargs are accepted, depending on the scale:
         %(scale_docs)s
@@ -2585,7 +2584,7 @@ class Axes(martist.Artist):
         """
         Set the x ticks with list of *ticks*
 
-        ACCEPTS: sequence of floats
+        ticks : sequence of floats
         """
         return self.xaxis.set_ticks(ticks, minor=minor)
 
@@ -2627,7 +2626,7 @@ class Axes(martist.Artist):
         Valid properties are
         %(Text)s
 
-        ACCEPTS: sequence of strings
+        labels : sequence of strings
         """
         return self.xaxis.set_ticklabels(labels, fontdict,
                                          minor=minor, **kwargs)
@@ -2730,7 +2729,6 @@ class Axes(martist.Artist):
 
         Returns the current ylimits as a length 2 tuple
 
-        ACCEPTS: length 2 sequence of floats
         """
         if 'ymin' in kw:
             bottom = kw.pop('ymin')
@@ -2793,7 +2791,7 @@ class Axes(martist.Artist):
 
         Set the scaling of the y-axis: %(scale)s
 
-        ACCEPTS: [%(scale)s]
+        value : [%(scale)s]
 
         Different kwargs are accepted, depending on the scale:
         %(scale_docs)s
@@ -2810,7 +2808,7 @@ class Axes(martist.Artist):
         """
         Set the y ticks with list of *ticks*
 
-        ACCEPTS: sequence of floats
+        ticks : sequence of floats
 
         Keyword arguments:
 
@@ -2857,7 +2855,7 @@ class Axes(martist.Artist):
         Valid properties are
         %(Text)s
 
-        ACCEPTS: sequence of strings
+        labels : sequence of strings
         """
         return self.yaxis.set_ticklabels(labels, fontdict,
                                          minor=minor, **kwargs)
@@ -2944,7 +2942,7 @@ class Axes(martist.Artist):
         """
         Set whether the axes responds to navigation toolbar commands
 
-        ACCEPTS: [ *True* | *False* ]
+        b : bool
         """
         self._navigate = b
 
@@ -3090,7 +3088,6 @@ class Axes(martist.Artist):
 
           ax.set_cursor_props((linewidth, color))
 
-        ACCEPTS: a (*float*, *color*) tuple
         """
         if len(args) == 1:
             lw, c = args[0]
