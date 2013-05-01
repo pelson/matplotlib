@@ -14,7 +14,7 @@ install:
   # This is a workaround to install numpy with the version of
   # virtualenv in Travis.  If that is updated in the future, this can
   # be simplified to 'pip install numpy'
-  - 'if [ $TRAVIS_PYTHON_VERSION == "3.2" ]; then pip install https://github.com/y-p/numpy/archive/1.6.2_with_travis_fix.tar.gz; fi'
+  - 'if [ $TRAVIS_PYTHON_VERSION == "3.2" ]; then pip install https://github.com/y-p/numpy/archive/1.6.2_with_travis_fix.tar.gz > /dev/null; fi'
   - 'if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install numpy; fi' # should be nop if pre-installed
   - if [[ $TRAVIS_PYTHON_VERSION == '2.'* ]]; then pip install --use-mirrors PIL; fi
   - sudo apt-get update && sudo apt-get install inkscape
@@ -23,4 +23,4 @@ install:
 script:
   - mkdir ../tmp_test_dir
   - cd ../tmp_test_dir
-  - python ../matplotlib/tests.py -sv --processes=$(nproc)
+  - python ../matplotlib/tests.py -sv --processes=$(nproc) --process-timeout=300
