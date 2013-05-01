@@ -18,9 +18,9 @@ install:
   - 'if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install numpy; fi' # should be nop if pre-installed
   - if [[ $TRAVIS_PYTHON_VERSION == '2.'* ]]; then pip install --use-mirrors PIL; fi
   - sudo apt-get update && sudo apt-get install inkscape
-  - python setup.py install
+  - python setup.py install > /dev/null
 
 script:
   - mkdir ../tmp_test_dir
   - cd ../tmp_test_dir
-  - python ../matplotlib/tests.py -sv
+  - python ../matplotlib/tests.py -sv --processes=$(nproc)
