@@ -213,6 +213,11 @@ If you are using a custom backend, note that the `draw_text` renderer
 method is now passed the location of the baseline, not the location of
 the bottom of the text bounding box.
 
+Easy peek of a colormap
+-----------------------
+Phil Elson added :meth:`matplotlib.colors.Colormap.peek` to quickly see what
+a given colormap looks like.
+
 ``savefig.jpeg_quality`` added to rcParams
 ------------------------------------------------------------------------------
 ``rcParam`` value ``savefig.jpeg_quality`` was added so that the user can

@@ -47,10 +47,14 @@ Finally, legal html names for colors, like 'red', 'burlywood' and 'chartreuse'
 are supported.
 """
 from __future__ import print_function, division
+import functools
 import re
+
 import numpy as np
 from numpy import ma
+
 import matplotlib.cbook as cbook
+
 
 parts = np.__version__.split('.')
 NP_MAJOR, NP_MINOR = map(int, parts[:2])
@@ -495,10 +499,12 @@ class Colormap(object):
         name : str
             The name of the colormap.
         N : int
-            The number of rgb quantization levels.
+            The number of RGBA quantization levels.
 
         """
+        #: The name of the colormap.
         self.name = name
+        # The number of RGBA quantization levels.
         self.N = N
         self._rgba_bad = (0.0, 0.0, 0.0, 0.0)  # If bad, don't paint anything.
         self._rgba_under = None
@@ -509,8 +515,9 @@ class Colormap(object):
         self._isinit = False
 
         #: When this colormap exists on a scalar mappable and colorbar_extend
-        #: is not False colorbar creation will be instructed to take this value
-        #: as the extend argument to the colorbar constructor.
+        #: is not False, colorbar creation will pick up ``colorbar_extend`` as
+        #: the default for the ``extend`` keyword in the
+        #: :class:`matplotlib.colorbar.Colorbar` constructor.
         self.colorbar_extend = False
 
     def __call__(self, X, alpha=None, bytes=False):
@@ -612,17 +619,38 @@ class Colormap(object):
             rgba = tuple(rgba[0, :])
         return rgba
 
+    def _extreme_updater(self):
+        """
+        Decorator for methods which modify the extreme Colormap values.
+
+        Calls Colormap._set_extremes if the colormap is initialized.
+        """
+        # n.b. self is really the function to be decorated. Decorators inside
+        # class definitions do not get called as bound methods.
+        func = self
+
+        @functools.wraps(func)
+        def wrapped_fn(self, *args, **kwargs):
+            func(self, *args, **kwargs)
+            if self._isinit:
+                self._set_extremes()
+        return wrapped_fn
+
     @property
     def bad_color(self):
         """Get the RGBA tuple to be used for the color of masked values."""
         return self._rgba_bad
 
+    @bad_color.setter
+    @_extreme_updater
+    def bad_color(self, color):
+        self._rgba_bad = colorConverter.to_rgba(color)
+
+    @_extreme_updater
     def set_bad(self, color='k', alpha=None):
         '''Set color to be used for masked values.
         '''
         self._rgba_bad = colorConverter.to_rgba(color, alpha)
-        if self._isinit:
-            self._set_extremes()
 
     @property
     def under_color(self):
@@ -634,13 +662,17 @@ class Colormap(object):
         """
         return self._rgba_under
 
+    @under_color.setter
+    @_extreme_updater
+    def under_color(self, color):
+        self._rgba_under = colorConverter.to_rgba(color)
+
+    @_extreme_updater
     def set_under(self, color='k', alpha=None):
         '''Set color to be used for low out-of-range values.
            Requires norm.clip = False
         '''
         self._rgba_under = colorConverter.to_rgba(color, alpha)
-        if self._isinit:
-            self._set_extremes()
 
     @property
     def over_color(self):
@@ -652,6 +684,12 @@ class Colormap(object):
         """
         return self._rgba_over
 
+    @over_color.setter
+    @_extreme_updater
+    def over_color(self, color):
+        self._rgba_over = colorConverter.to_rgba(color)
+
+    @_extreme_updater
     def set_over(self, color='k', alpha=None):
         '''Set color to be used for high out-of-range values.
            Requires norm.clip = False
@@ -680,6 +718,33 @@ class Colormap(object):
             self._init()
         return (np.alltrue(self._lut[:, 0] == self._lut[:, 1]) and
                 np.alltrue(self._lut[:, 0] == self._lut[:, 2]))
+
+    def peek(self):
+        """
+        Creates and shows a new figure containing the colors of this Colormap.
+
+        .. note::
+
+            This method imports ``matplotlib.pyplot`` and calls
+            :func:`matplotlib.pyplot.show` so the backend must be an
+            interactive one for a figure to appear.
+
+        """
+        # lazy import here - we don't want colors to depend on pyplot
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        ax = plt.axes()
+        plt.pcolormesh(np.arange(self.N).reshape(1, -1), norm=NoNorm(),
+                       cmap=self)
+        plt.title('The {cmap.name!r} colormap'.format(cmap=self))
+        ax.autoscale_view(tight=True)
+        ax.yaxis.set_visible(False)
+        leg_proxy = [plt.Rectangle((0, 0), 1, 1, facecolor=color)
+                     for color in (self.bad_color, self.under_color,
+                                   self.over_color)]
+        plt.legend(leg_proxy, ["Missing data", "Under range", "Over range"],
+                   fancybox=True, shadow=True)
+        plt.show(fig)
 
 
 class LinearSegmentedColormap(Colormap):

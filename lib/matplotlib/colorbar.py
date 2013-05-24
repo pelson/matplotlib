@@ -871,7 +871,7 @@ class Colorbar(ColorbarBase):
         else:
             if getattr(cmap, 'colorbar_extend', False) is not False:
                 kw.setdefault('extend', cmap.colorbar_extend)
-            
+
             if isinstance(mappable, martist.Artist):
                 kw['alpha'] = mappable.get_alpha()
 
