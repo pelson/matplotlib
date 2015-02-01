@@ -147,7 +147,7 @@ def get_base_dirs():
 
     basedir_map = {
         'win32': ['win32_static', ],
-        'darwin': ['/usr/local/', '/usr', '/usr/X11',
+        'darwin': [sys.prefix, '/usr/local/', '/usr', '/usr/X11',
                    '/opt/X11', '/opt/local'],
         'sunos5': [os.getenv('MPLIB_BASE') or '/usr/local', ],
         'gnu0': ['/usr'],
@@ -203,6 +203,13 @@ else:
 customize_compiler = sysconfig.customize_compiler
 def my_customize_compiler(compiler):
     retval = customize_compiler(compiler)
+    print(compiler.compiler_so)
+    print(compiler.linker_so)
+    dl_kwd_index = compiler.linker_so.index('dynamic_lookup')
+    compiler.linker_so.pop(dl_kwd_index)
+    compiler.linker_so.pop(dl_kwd_index - 1)
+    compiler.linker_so.extend(['-Bstatic', '-lstdc++', '-lpython2.7'])
+    print(compiler.linker_so)
     try:
         compiler.compiler_so.remove('-Wstrict-prototypes')
     except (ValueError, AttributeError):
@@ -1467,6 +1474,12 @@ class BackendTkAgg(OptionalBackendPackage):
             ext.library_dirs.extend([os.path.join(sys.prefix, 'dlls')])
 
         elif sys.platform == 'darwin':
+            if os.path.exists(os.path.join(sys.prefix, 'include', 'tcl.h')):
+                ext.libraries.extend(['tk8.5'])
+                ext.libraries.extend(['tcl8.5'])
+#                 ext.include_dirs.append(os.path.join(sys.prefix, 'include'))
+                return
+            
             # this config section lifted directly from Imaging - thanks to
             # the effbot!
 
@@ -1492,6 +1505,7 @@ class BackendTkAgg(OptionalBackendPackage):
                     tk_framework_found = 1
                     break
             if tk_framework_found:
+                print('FRAMEWORK FOUND')
                 # For 8.4a2, we must add -I options that point inside
                 # the Tcl and Tk frameworks. In later release we
                 # should hopefully be able to pass the -F option to

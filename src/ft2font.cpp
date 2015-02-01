@@ -2,8 +2,6 @@
 
 #define NO_IMPORT_ARRAY
 
-#include <string>
-
 #include "ft2font.h"
 #include "mplutils.h"
 

@@ -5,6 +5,7 @@
 #define _FT2FONT_H
 #include <vector>
 #include <stdint.h>
+#include <string>
 
 extern "C" {
 #include <ft2build.h>
