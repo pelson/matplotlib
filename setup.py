@@ -10,6 +10,7 @@ from distribute_setup import use_setuptools
 use_setuptools()
 from setuptools.command.test import test as TestCommand
 
+import platform
 import sys
 
 # distutils is breaking our sdists for files in symlinked dirs.

@@ -17,6 +17,7 @@ import versioneer
 
 
 PY3 = (sys.version_info[0] >= 3)
+IS_WINDOWS = platform.system() == 'Windows'
 
 
 try:
@@ -45,7 +46,7 @@ except ImportError:
         return output
 
 
-if sys.platform != 'win32':
+if IS_WINDOWS:
     if sys.version_info[0] < 3:
         from commands import getstatusoutput
     else:
@@ -122,7 +123,7 @@ def has_include_file(include_dirs, filename):
     Returns `True` if `filename` can be found in one of the
     directories in `include_dirs`.
     """
-    if sys.platform == 'win32':
+    if IS_WINDOWS:
         include_dirs += os.environ.get('INCLUDE', '.').split(';')
     for dir in include_dirs:
         if os.path.exists(os.path.join(dir, filename)):
@@ -252,7 +253,7 @@ class PkgConfig(object):
         """
         Determines whether pkg-config exists on this machine.
         """
-        if sys.platform == 'win32':
+        if IS_WINDOWS:
             self.has_pkgconfig = False
         else:
             try:
@@ -897,7 +898,7 @@ class FreeType(SetupPackage):
     name = "freetype"
 
     def check(self):
-        if sys.platform == 'win32':
+        if IS_WINDOWS:
             check_include_file(get_include_dirs(), 'ft2build.h', 'freetype')
             return 'Using unknown version found on system.'
 
@@ -972,7 +973,7 @@ class Png(SetupPackage):
     name = "png"
 
     def check(self):
-        if sys.platform == 'win32':
+        if IS_WINDOWS:
             check_include_file(get_include_dirs(), 'png.h', 'png')
             return 'Using unknown version found on system.'
 
@@ -1631,7 +1632,7 @@ class BackendGtk(OptionalBackendPackage):
         return ext
 
     def add_flags(self, ext):
-        if sys.platform == 'win32':
+        if IS_WINDOWS:
             def getoutput(s):
                 ret = os.popen(s).read().strip()
                 return ret
@@ -1681,12 +1682,12 @@ class BackendGtk(OptionalBackendPackage):
                  (flag.startswith('-l') or flag.startswith('-L'))])
 
             # visual studio doesn't need the math library
-            if (sys.platform == 'win32' and
+            if (IS_WINDOWS and
                 win32_compiler == 'msvc' and
                 'm' in ext.libraries):
                 ext.libraries.remove('m')
 
-        elif sys.platform != 'win32':
+        elif IS_WINDOWS:
             pkg_config.setup_extension(ext, 'pygtk-2.0')
             pkg_config.setup_extension(ext, 'gtk+-2.0')
 
@@ -1928,7 +1929,7 @@ class Windowing(OptionalBackendPackage):
     name = "windowing"
 
     def check_requirements(self):
-        if sys.platform != 'win32':
+        if not IS_WINDOWS:
             raise CheckFailed("Microsoft Windows only")
         config = self.get_config()
         if config is False:
